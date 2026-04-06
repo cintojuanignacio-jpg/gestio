@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.39.3/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0e0e0f;color:#f0ede8;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:#161618;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:40px;width:100%;max-width:400px;margin:20px}
+.logo{text-align:center;margin-bottom:24px;font-size:32px;font-weight:700;color:#c8a96e}
+h2{text-align:center;font-size:20px;margin-bottom:6px}
+p{text-align:center;color:#7a7875;font-size:13px;margin-bottom:24px}
+label{display:block;font-size:12px;color:#7a7875;margin-bottom:5px;margin-top:14px}
+input{width:100%;background:#1e1e21;border:1px solid rgba(255,255,255,0.15);color:#f0ede8;padding:10px 14px;border-radius:8px;font-size:14px;outline:none}
+input:focus{border-color:#c8a96e}
+button{width:100%;background:#c8a96e;color:#1a1208;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:20px}
+button:hover{opacity:0.85}
+button:disabled{opacity:0.5;cursor:not-allowed}
+.err{background:rgba(224,90,78,.1);border:1px solid rgba(224,90,78,.4);color:#f08078;border-radius:8px;padding:10px;font-size:13px;margin-bottom:12px;display:none}
+.ok{background:rgba(76,175,130,.1);border:1px solid rgba(76,175,130,.4);color:#4caf82;border-radius:8px;padding:10px;font-size:13px;margin-bottom:12px;display:none}
+.switch{text-align:center;margin-top:16px;font-size:13px;color:#7a7875}
+.switch a{color:#c8a96e;cursor:pointer}
+.page{display:none}
+.page.active{display:block}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- REGISTRO -->
+  <div class="page active" id="p-reg">
+    <div class="logo">G</div>
+    <h2>Crea tu cuenta</h2>
+    <p>14 días gratis · Sin tarjeta</p>
+    <div class="err" id="reg-err"></div>
+    <div class="ok" id="reg-ok"></div>
+    <label>Nombre de tu negocio</label>
+    <input id="reg-neg" type="text" placeholder="Bar Los Pinos...">
+    <label>Email</label>
+    <input id="reg-email" type="email" placeholder="tu@email.com">
+    <label>Contraseña</label>
+    <input id="reg-pass" type="password" placeholder="Mínimo 6 caracteres">
+    <button id="reg-btn">Crear cuenta gratis</button>
+    <div class="switch">¿Ya tienes cuenta? <a id="go-login">Entrar</a></div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="page" id="p-login">
+    <div class="logo">G</div>
+    <h2>Bienvenido</h2>
+    <p>Entra en tu dashboard</p>
+    <div class="err" id="login-err"></div>
+    <label>Email</label>
+    <input id="login-email" type="email" placeholder="tu@email.com">
+    <label>Contraseña</label>
+    <input id="login-pass" type="password" placeholder="Tu contraseña">
+    <button id="login-btn">Entrar</button>
+    <div class="switch">¿No tienes cuenta? <a id="go-reg">Crear cuenta</a></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page" id="p-dash">
+    <div class="logo">G</div>
+    <h2 id="dash-title">¡Bienvenido!</h2>
+    <p id="dash-sub">Tu dashboard está listo</p>
+    <button id="logout-btn" style="background:#1e1e21;color:#7a7875;border:1px solid rgba(255,255,255,0.1)">Cerrar sesión</button>
+  </div>
+
+</div>
+
+<script>
+// Init Supabase
+const SURL  = atob('aHR0cHM6Ly91bHJhbG50aG10cmhscWd6bGJhai5zdXBhYmFzZS5jbw==');
+const SANON = atob('ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5Wc2NtRnNiblJvYlhSeWFHeHhaM3BzWW1GcUlpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzTkRNM01qSTRNelVzSW1WNGNDSTZNakExT1RJNU9EZ3pOWDAuaGg4TXFMb0ZUU010UkNOZnhNY0U0VXkzWWpCZDRTSmlDTG5GbHN1akVaSQ==');
+const { createClient } = supabase;
+const sb = createClient(SURL, SANON);
+
+console.log('Supabase iniciado:', !!sb);
+
+function show(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function err(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+}
+function clearErr(id) { document.getElementById(id).style.display = 'none'; }
+function ok(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+}
+
+// Registro
+document.getElementById('reg-btn').addEventListener('click', async function() {
+  clearErr('reg-err');
+  const neg   = document.getElementById('reg-neg').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-pass').value;
+  if (!neg || !email || !pass) { err('reg-err', 'Rellena todos los campos.'); return; }
+  if (pass.length < 6) { err('reg-err', 'La contraseña debe tener al menos 6 caracteres.'); return; }
+  this.disabled = true; this.textContent = 'Creando cuenta...';
+  try {
+    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { nombre_negocio: neg } } });
+    if (error) throw error;
+    if (data.user) {
+      await sb.from('clientes').insert({ user_id: data.user.id, email, nombre_negocio: neg, plan: 'basico' });
+      ok('reg-ok', '¡Cuenta creada! Entrando...');
+      setTimeout(() => iniciarSesion(data.user), 1000);
+    }
+  } catch(e) {
+    err('reg-err', e.message || 'Error al crear la cuenta.');
+  } finally {
+    this.disabled = false; this.textContent = 'Crear cuenta gratis';
+  }
+});
+
+// Login
+document.getElementById('login-btn').addEventListener('click', async function() {
+  clearErr('login-err');
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) { err('login-err', 'Rellena email y contraseña.'); return; }
+  this.disabled = true; this.textContent = 'Entrando...';
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    await iniciarSesion(data.user);
+  } catch(e) {
+    err('login-err', e.message === 'Invalid login credentials' ? 'Email o contraseña incorrectos.' : e.message);
+  } finally {
+    this.disabled = false; this.textContent = 'Entrar';
+  }
+});
+
+// Cerrar sesión
+document.getElementById('logout-btn').addEventListener('click', async function() {
+  await sb.auth.signOut();
+  show('p-login');
+});
+
+// Navegación
+document.getElementById('go-login').addEventListener('click', () => show('p-login'));
+document.getElementById('go-reg').addEventListener('click',   () => show('p-reg'));
+
+async function iniciarSesion(user) {
+  document.getElementById('dash-title').textContent = '¡Hola, ' + (user.user_metadata?.nombre_negocio || user.email.split('@')[0]) + '!';
+  document.getElementById('dash-sub').textContent = 'Sesión iniciada como ' + user.email;
+  show('p-dash');
+}
+
+// Verificar sesión existente
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  console.log('Sesión:', session ? 'activa' : 'ninguna');
+  if (session?.user) await iniciarSesion(session.user);
+})();
+</script>
+</body>
+</html>
